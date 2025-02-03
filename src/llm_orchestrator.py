@@ -1,11 +1,10 @@
-import os
 from dotenv import load_dotenv
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from .memory_manager import MemorySystem
 from .web_search import WebSearch
-
+import torch
 load_dotenv()
 
 class LLMOrchestrator:
@@ -13,7 +12,7 @@ class LLMOrchestrator:
         self.memory = MemorySystem()
         self.web_search = WebSearch()
         
-        # Load local LLM (Mistral-7B example)
+        # Load local LLM
         self.tokenizer = AutoTokenizer.from_pretrained(
             "models/mistral-7b-vietnamese",
             use_fast=True
