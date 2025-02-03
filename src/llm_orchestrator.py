@@ -1,7 +1,8 @@
 from dotenv import load_dotenv
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+from llama_cpp import Llama
+# from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from .memory_manager import MemorySystem
 from .web_search import WebSearch
 import torch
@@ -13,20 +14,11 @@ class LLMOrchestrator:
         self.web_search = WebSearch()
         
         # Load local LLM
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            "models/mistral-7b-vietnamese",
-            use_fast=True
-        )
-        self.model = AutoModelForCausalLM.from_pretrained(
-            "models/mistral-7b-vietnamese",
-            device_map="auto",
-            torch_dtype=torch.float16
-        )
-        self.pipe = pipeline(
-            "text-generation",
-            model=self.model,
-            tokenizer=self.tokenizer,
-            max_new_tokens=512
+        self.model = Llama(
+            model_path="models/mistral-7b-vietnamese/ggml-vistral-7B-chat-q4_1.gguf",
+            n_ctx=2048,
+            n_threads=4,
+            n_gpu_layers=-1
         )
 
         # System prompt template
@@ -53,13 +45,17 @@ class LLMOrchestrator:
         )
         
         # 4. Generate response
-        response = self.pipe(
-            prompt,
+        response = self.model(
+            self.prompt_template.format(
+                context=context,
+                question=query
+            ),
+            max_tokens=512,
             temperature=0.7,
-            do_sample=True
-        )[0]['generated_text']
+            stop=["[/INST]", "</s>"]
+        )
         
-        # 5. Update memory
-        self.memory.store_memory(user_id, query, response)
-        
-        return response.split("[/INST]")[-1].strip()
+        generated_text = response["choices"][0]["text"]
+        self.memory.store_memory(user_id, query, generated_text)
+
+        return generated_text
