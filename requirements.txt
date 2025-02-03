@@ -7,3 +7,6 @@ torch==2.3.0
 accelerate==0.29.3
 python-dotenv==1.0.1
 googlesearch-python==1.2.3
+numpy>=1.21.0,<2.0.0
+chromadb==0.4.22
+sentence-transformers>=2.2.2
